@@ -146,7 +146,13 @@ class TypedDataUtil {
         }
 
         if (type == 'bytes') {
-          return ['bytes32', keccak256(value)];
+          final List<int> convertedList = new List<int>.from(value);
+          if (convertedList != null) {
+            final uint8List = Uint8List.fromList(convertedList);
+            return ['bytes32', keccak256(uint8List)];
+          } else {
+            throw new ArgumentError('Not supported type for bytes');
+          }
         }
 
         if (type == 'string') {
