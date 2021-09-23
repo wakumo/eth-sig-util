@@ -146,7 +146,12 @@ class TypedDataUtil {
         }
 
         if (type == 'bytes') {
-          return ['bytes32', keccak256(value)];
+          if (isHexString(value)) {
+            value = keccak256(hexToBytes(value));
+          } else {
+            value = keccak256(Uint8List.fromList(utf8.encode(value)));
+          }
+          return ['bytes32', value];
         }
 
         if (type == 'string') {
@@ -199,7 +204,7 @@ class TypedDataUtil {
           if (field.type == 'bytes') {
             encodedTypes.add('bytes32');
             if (value is String) {
-              if (isHexPrefixed(value)) {
+              if (isHexString(value)) {
                 value = keccak256(hexToBytes(value));
               } else {
                 value = keccak256(Uint8List.fromList(utf8.encode(value)));
@@ -281,7 +286,7 @@ class TypedDataUtil {
   static Uint8List typedSignatureHash(List<EIP712TypedData> typedData) {
     final data = typedData.map((e) {
       if (e.type == 'bytes') {
-        if (isHexPrefixed(e.value)) {
+        if (isHexString(e.value)) {
           return hexToBytes(e.value);
         } else {
           return Uint8List.fromList(utf8.encode(e.value));
