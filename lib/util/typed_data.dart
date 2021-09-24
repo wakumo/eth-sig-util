@@ -146,10 +146,20 @@ class TypedDataUtil {
         }
 
         if (type == 'bytes') {
-          if (isHexString(value)) {
-            value = keccak256(hexToBytes(value));
+          if (value is String) {
+            if (isHexString(value)) {
+              value = keccak256(hexToBytes(value));
+            } else {
+              value = keccak256(Uint8List.fromList(utf8.encode(value)));
+            }
           } else {
-            value = keccak256(Uint8List.fromList(utf8.encode(value)));
+            final List<int> convertedList = new List<int>.from(value);
+            if (convertedList != null) {
+              final uint8List = Uint8List.fromList(convertedList);
+              value = keccak256(uint8List);
+            } else {
+              throw new ArgumentError('Not supported type for bytes');
+            }
           }
           return ['bytes32', value];
         }
