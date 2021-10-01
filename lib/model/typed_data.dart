@@ -92,12 +92,14 @@ class EIP712Domain {
   }
 
   factory EIP712Domain.fromJson(Map<String, dynamic> json) => EIP712Domain(
-      name: json['name'] as String,
-      version: json['version'] as String,
-      chainId: json['chainId'] is int
-          ? json['chainId']
-          : int.tryParse(json['chainId']),
-      verifyingContract: json['verifyingContract'] as String);
+      name: json['name'],
+      version: json['version'],
+      chainId: json['chainId'] != null
+          ? json['chainId'] is int
+              ? json['chainId']
+              : int.tryParse(json['chainId'])
+          : null,
+      verifyingContract: json['verifyingContract']);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'name': name,

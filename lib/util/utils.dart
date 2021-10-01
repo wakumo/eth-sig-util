@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart' show hex;
 
 bool isHexPrefixed(String str) {
-  return str.substring(0, 2) == '0x';
+  return str.startsWith('0x');
 }
 
 Uint8List hexToBytes(String hexStr) {
