@@ -2,16 +2,25 @@
 
 Ethereum signature utility porting from JS
 
-This lib came from the demand of project and main focus on sign typed data firstly
+This lib came from the demand of our project [Avacus](https://avacus.cc)
 
-Inspired by Dart ethereum_util but no longer working and not yet supported for V1 and V4
+Inspired by Dart ethereum_util but no longer active and not yet supported for V1 and V4
 
 ## Features
-- Sign typed data EIP712 V1, V3, V4
+- Sign typed message (Typed Data follow EIP712 standard)
+- Sign message
+- Sign personal message
+- Recover public address from signature (personal_ecRecover)
 
 ## Usage
 ```dart
 import 'package:eth_sig_util/eth_sig_util.dart';
 
 String signature = EthSigUtil.signTypedData(privateKey: '4af...bb0', jsonData: '{...}', version: TypedDataVersion.V4);
+
+String signature = EthSigUtil.signMessage(privateKey: '4af...bb0', message: []);
+
+String signature = EthSigUtil.signPersonalMessage(privateKey: '4af...bb0', message: []);
+
+String address = EthSigUtil.ecRecover(signature: '0x84ea3...', message: []);
 ```
