@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:collection/collection.dart' show ListEquality;
@@ -19,11 +20,20 @@ final ECDomainParameters _params = ECCurve_secp256k1();
 final BigInt _halfCurveOrder = _params.n ~/ BigInt.two;
 
 class SignatureUtil {
+  static const _messagePrefix = '\u0019Ethereum Signed Message:\n';
+
   static String sign(
       {required Uint8List message, required String privateKey, int? chainId}) {
     final sig =
         signToSignature(message, hexToBytes(privateKey), chainId: chainId);
     return concatSig(toBuffer(sig.r), toBuffer(sig.s), toBuffer(sig.v));
+  }
+
+  static String signPersonalMessage(
+      {required Uint8List message, required String privateKey, int? chainId}) {
+    final personalMessage = _getPersonalMessage(message);
+    return sign(
+        message: personalMessage, privateKey: privateKey, chainId: chainId);
   }
 
   static ECDSASignature signToSignature(Uint8List message, Uint8List privateKey,
@@ -71,6 +81,15 @@ class SignatureUtil {
       sig.s,
       chainId != null ? recoveryId + (chainId * 2 + 35) : recoveryId + 27,
     );
+  }
+
+  static String ecRecover(
+      {required String signature, required Uint8List message, int? chainId}) {
+    final publicKey = recoverPublicKeyFromSignature(
+        SignatureUtil.fromRpcSig(signature), message);
+    if (publicKey == null)
+      throw Exception('Can not recover public key from signature');
+    return bytesToHex(publicKeyToAddress(publicKey), include0x: true);
   }
 
   static Uint8List publicKeyToAddress(Uint8List publicKey) {
@@ -236,5 +255,11 @@ class SignatureUtil {
     }
 
     return true;
+  }
+
+  static Uint8List _getPersonalMessage(Uint8List message) {
+    final prefix = _messagePrefix + message.length.toString();
+    final prefixBytes = ascii.encode(prefix);
+    return Uint8List.fromList(prefixBytes + message);
   }
 }

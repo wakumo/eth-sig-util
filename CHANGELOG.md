@@ -10,3 +10,7 @@
 ## 0.0.3
 
 - Resolve some old parts that no longer work
+
+## 0.0.4
+
+- Expose and support sign message, sign personal message, recover address
