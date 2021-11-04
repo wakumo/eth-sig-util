@@ -14,3 +14,7 @@
 ## 0.0.4
 
 - Expose and support sign message, sign personal message, recover address
+
+## 0.0.5
+
+- Fix encode personal message

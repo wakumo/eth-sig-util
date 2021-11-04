@@ -260,6 +260,6 @@ class SignatureUtil {
   static Uint8List _getPersonalMessage(Uint8List message) {
     final prefix = _messagePrefix + message.length.toString();
     final prefixBytes = ascii.encode(prefix);
-    return Uint8List.fromList(prefixBytes + message);
+    return keccak256(Uint8List.fromList(prefixBytes + message));
   }
 }
