@@ -69,11 +69,13 @@ class EIP712Domain {
   String? version;
   int? chainId;
   String? verifyingContract;
+  String? salt;
 
   EIP712Domain(
       {required this.name,
       required this.version,
       required this.chainId,
+      required this.salt,
       required this.verifyingContract});
 
   dynamic operator [](String key) {
@@ -86,6 +88,8 @@ class EIP712Domain {
         return chainId;
       case 'verifyingContract':
         return verifyingContract;
+      case 'salt':
+        return salt;
       default:
         throw ArgumentError("Key ${key} is invalid");
     }
@@ -99,12 +103,14 @@ class EIP712Domain {
               ? json['chainId']
               : int.tryParse(json['chainId'])
           : null,
-      verifyingContract: json['verifyingContract']);
+      verifyingContract: json['verifyingContract'],
+      salt: json['salt']);
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'name': name,
         'version': version,
         'chainId': chainId,
+        'salt': salt,
         'verifyingContract': verifyingContract
       };
 }

@@ -112,4 +112,40 @@ void main() {
     expect(bufferToHex(TypedDataUtil.hashTypedDataV4(typedData)),
         '0x807773b9faa9879d4971b43856c4d60c2da15c6f8c062bd9d33afefb756de19c');
   });
+
+  test('salt domain', () {
+    final Map<String, dynamic> rawTypedData = {
+      "primaryType": "MetaTransaction",
+      "types": {
+        "EIP712Domain": [
+          {"name": "name", "type": "string"},
+          {"name": "version", "type": "string"},
+          {"name": "verifyingContract", "type": "address"},
+          {"name": "salt", "type": "bytes32"}
+        ],
+        "MetaTransaction": [
+          {"name": "nonce", "type": "uint256"},
+          {"name": "from", "type": "address"},
+          {"name": "functionSignature", "type": "bytes"}
+        ]
+      },
+      "domain": {
+        "name": "Wrapped Ether",
+        "version": "1",
+        "verifyingContract": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
+        "salt":
+            "0x0000000000000000000000000000000000000000000000000000000000000089"
+      },
+      "message": {
+        "nonce": 0,
+        "from": "0xf8146d6e32329fc78639c51e2576ef7b02eb8e77",
+        "functionSignature":
+            "0x095ea7b3000000000000000000000000411b0bcf1b6ea88cb7229558c89994a2449c302cffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    };
+
+    final typedData = TypedMessage.fromJson(rawTypedData);
+    expect(bufferToHex(TypedDataUtil.hashTypedDataV4(typedData)),
+        '0xcfe2afcb6ec9cd89e498fb2a7f06a29a12d145eca8ec75f8f8ecf6e2c7cf64a6');
+  });
 }

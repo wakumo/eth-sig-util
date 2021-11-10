@@ -18,3 +18,7 @@
 ## 0.0.5
 
 - Fix encode personal message
+
+## 0.0.6
+
+- Add missing salt field in EIP712Domain object
