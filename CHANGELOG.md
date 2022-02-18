@@ -22,3 +22,7 @@
 ## 0.0.6
 
 - Add missing salt field in EIP712Domain object
+
+## 0.0.7
+
+- Fix findTypeDependencies
