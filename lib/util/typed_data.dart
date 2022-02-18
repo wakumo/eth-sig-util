@@ -247,21 +247,21 @@ class TypedDataUtil {
   static String encodeType(
       String primaryType, Map<String, List<TypedDataField>> types) {
     var result = '';
-    var deps = findTypeDependencies(primaryType, types);
-    deps = deps.where((dep) => dep != primaryType).toList();
-    deps.sort();
-    deps.insert(0, primaryType);
-    deps.forEach((dep) {
-      if (!types.containsKey(dep)) {
-        throw new ArgumentError('No type definition specified: ' + dep);
+    final unsortedDeps = findTypeDependencies(primaryType, types)
+      ..removeWhere((type) => type == primaryType);
+    var deps = [primaryType, ...List.of(unsortedDeps)..sort()];
+    deps.forEach((type) {
+      if (!types.containsKey(type)) {
+        throw new ArgumentError('No type definition specified: ' + type);
       }
-      result += dep +
-          '(' +
-          types[dep]!.map((field) => field.type + ' ' + field.name).join(',') +
-          ')';
+      result +=
+          "${type}(${types[type]!.map((field) => '${field.type} ${field.name}').join(',')})";
     });
+    print("result=$result");
     return result;
   }
+
+  static final RegExp _typeRegex = RegExp(r"^\w*", unicode: true);
 
   /// Finds all types within a type defintion object
   ///
@@ -269,12 +269,11 @@ class TypedDataUtil {
   /// @param {Object} types - Type definitions
   /// @param {Array} results - current set of accumulated types
   /// @returns {Array} - Set of all types found in the type definition
-  static List<String> findTypeDependencies(
+  static Set<String> findTypeDependencies(
       String primaryType, Map<String, List<TypedDataField>> types,
-      {List<String>? results}) {
-    if (results == null) {
-      results = [];
-    }
+      {Set<String>? results}) {
+    primaryType = _typeRegex.stringMatch(primaryType) ?? "";
+    results ??= Set();
     if (results.contains(primaryType) || !types.containsKey(primaryType)) {
       return results;
     }
