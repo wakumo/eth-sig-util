@@ -257,7 +257,6 @@ class TypedDataUtil {
       result +=
           "${type}(${types[type]!.map((field) => '${field.type} ${field.name}').join(',')})";
     });
-    print("result=$result");
     return result;
   }
 
