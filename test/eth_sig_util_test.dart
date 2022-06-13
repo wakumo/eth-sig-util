@@ -306,4 +306,28 @@ void main() {
     expect(sig,
         '0xf2ec61e636ff7bb3ac8bc2a4cc2c8b8f635dd1b2ec8094c963128b358e79c85c5ca6dd637ed7e80f0436fe8fce39c0e5f2082c9517fe677cc2917dcd6c84ba881c');
   });
+
+  const pk =
+      '0x4af1bceebf7f3634ec3cff8a2c38e51178d5d4ce585c52d6043e5e2cc3418bb0';
+  const helloWorldSignature =
+      '0x90a938f7457df6e8f741264c32697fc52f9a8f867c52dd70713d9d2d472f2e415d9c94148991bbe1f4a1818d1dff09165782749c877f5cf1eff4ef126e55714d1c';
+  final helloWorldMessage = Uint8List.fromList(utf8.encode('Hello, world!'));
+
+  test('should sign a message', () {
+    expect(
+        EthSigUtil.signPersonalMessage(
+            privateKey: pk, message: helloWorldMessage),
+        helloWorldSignature);
+  });
+
+  test('should recover the address from a signature', () {
+    expect(
+        EthSigUtil.recoverPersonalSignature(
+            signature: helloWorldSignature, message: helloWorldMessage),
+        bytesToHex(
+            SignatureUtil.publicKeyToAddress(
+                SignatureUtil.privateKeyToPublicKey(
+                    Uint8List.fromList(hexToBytes(pk)))),
+            include0x: true));
+  });
 }
