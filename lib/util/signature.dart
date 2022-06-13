@@ -23,21 +23,26 @@ class SignatureUtil {
   static const _messagePrefix = '\u0019Ethereum Signed Message:\n';
 
   static String sign(
-      {required Uint8List message, required String privateKey, int? chainId}) {
+      {required Uint8List message,
+      String? privateKey,
+      Uint8List? privateKeyInBytes}) {
+    if (privateKey == null && privateKeyInBytes == null)
+      throw ArgumentError('Missing private key to sign');
     final sig =
-        signToSignature(message, hexToBytes(privateKey), chainId: chainId);
+        signToSignature(message, privateKeyInBytes ?? hexToBytes(privateKey!));
     return concatSig(toBuffer(sig.r), toBuffer(sig.s), toBuffer(sig.v));
   }
 
   static String signPersonalMessage(
-      {required Uint8List message, required String privateKey, int? chainId}) {
+      {required Uint8List message,
+      String? privateKey,
+      Uint8List? privateKeyInBytes}) {
     final personalMessage = _getPersonalMessage(message);
-    return sign(
-        message: personalMessage, privateKey: privateKey, chainId: chainId);
+    return sign(message: personalMessage, privateKey: privateKey);
   }
 
-  static ECDSASignature signToSignature(Uint8List message, Uint8List privateKey,
-      {int? chainId}) {
+  static ECDSASignature signToSignature(
+      Uint8List message, Uint8List privateKey) {
     final digest = SHA256Digest();
     final signer = ECDSASigner(null, HMac(digest, 64));
     final key = ECPrivateKey(decodeBigInt(privateKey), _params);
@@ -79,14 +84,18 @@ class SignatureUtil {
     return ECDSASignature(
       sig.r,
       sig.s,
-      chainId != null ? recoveryId + (chainId * 2 + 35) : recoveryId + 27,
+      recoveryId + 27,
     );
   }
 
   static String ecRecover(
-      {required String signature, required Uint8List message, int? chainId}) {
+      {required String signature,
+      required Uint8List message,
+      int? chainId,
+      required isPersonalSign}) {
+    final messageHash = isPersonalSign ? _getPersonalMessage(message) : message;
     final publicKey = recoverPublicKeyFromSignature(
-        SignatureUtil.fromRpcSig(signature), message);
+        SignatureUtil.fromRpcSig(signature), messageHash);
     if (publicKey == null)
       throw Exception('Can not recover public key from signature');
     return bytesToHex(publicKeyToAddress(publicKey), include0x: true);
