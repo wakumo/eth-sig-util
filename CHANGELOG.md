@@ -26,3 +26,7 @@
 ## 0.0.7
 
 - Fix findTypeDependencies
+
+## 0.0.8
+
+- Remove chain id params, expose private key in bytes along with hex string, separate recover personal signature
