@@ -26,7 +26,8 @@ class EthSigUtil {
     return SignatureUtil.sign(
         message:
             TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
-        privateKey: privateKey);
+        privateKey: privateKey,
+        privateKeyInBytes: privateKeyInBytes);
   }
 
   /// Sign typed data, support all versions, this is sign personal message
@@ -43,7 +44,8 @@ class EthSigUtil {
     return SignatureUtil.signPersonalMessage(
         message:
             TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
-        privateKey: privateKey);
+        privateKey: privateKey,
+        privateKeyInBytes: privateKeyInBytes);
   }
 
   /// Sign message
@@ -55,7 +57,10 @@ class EthSigUtil {
       {String? privateKey,
       Uint8List? privateKeyInBytes,
       required Uint8List message}) {
-    return SignatureUtil.sign(message: message, privateKey: privateKey);
+    return SignatureUtil.sign(
+        message: message,
+        privateKey: privateKey,
+        privateKeyInBytes: privateKeyInBytes);
   }
 
   /// Sign personal message, it's signMessage function but it's added prefix before
@@ -68,7 +73,9 @@ class EthSigUtil {
       Uint8List? privateKeyInBytes,
       required Uint8List message}) {
     return SignatureUtil.signPersonalMessage(
-        message: message, privateKey: privateKey);
+        message: message,
+        privateKey: privateKey,
+        privateKeyInBytes: privateKeyInBytes);
   }
 
   /// Recover exactly sender address from signature and message

@@ -30,3 +30,7 @@
 ## 0.0.8
 
 - Remove chain id params, expose private key in bytes along with hex string, separate recover personal signature
+- 
+## 0.0.9
+
+- Fix mistake of unused param
