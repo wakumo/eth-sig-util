@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:eth_sig_util/constant/typed_data_version.dart';
 import 'package:eth_sig_util/util/signature.dart';
+import 'package:eth_sig_util/util/signaturer1.dart';
 import 'package:eth_sig_util/util/typed_data.dart';
 
 export 'constant/typed_data_version.dart';
@@ -22,11 +23,17 @@ class EthSigUtil {
       {String? privateKey,
       Uint8List? privateKeyInBytes,
       required String jsonData,
-      required TypedDataVersion version}) {
-    return SignatureUtil.sign(
-        message:
-            TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
-        privateKey: privateKey);
+      required TypedDataVersion version,
+      bool useSecp256R1 = false}) {
+    return useSecp256R1
+        ? SignatureR1Util.sign(
+            message:
+                TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
+            privateKey: privateKey)
+        : SignatureUtil.sign(
+            message:
+                TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
+            privateKey: privateKey);
   }
 
   /// Sign typed data, support all versions, this is sign personal message
@@ -39,11 +46,17 @@ class EthSigUtil {
       {String? privateKey,
       Uint8List? privateKeyInBytes,
       required String jsonData,
-      required TypedDataVersion version}) {
-    return SignatureUtil.signPersonalMessage(
-        message:
-            TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
-        privateKey: privateKey);
+      required TypedDataVersion version,
+      bool useSecp256R1 = false}) {
+    return useSecp256R1
+        ? SignatureR1Util.signPersonalMessage(
+            message:
+                TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
+            privateKey: privateKey)
+        : SignatureUtil.signPersonalMessage(
+            message:
+                TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
+            privateKey: privateKey);
   }
 
   /// Sign message
@@ -54,8 +67,11 @@ class EthSigUtil {
   static String signMessage(
       {String? privateKey,
       Uint8List? privateKeyInBytes,
-      required Uint8List message}) {
-    return SignatureUtil.sign(message: message, privateKey: privateKey);
+      required Uint8List message,
+      bool useSecp256R1 = false}) {
+    return useSecp256R1
+        ? SignatureR1Util.sign(message: message, privateKey: privateKey)
+        : SignatureUtil.sign(message: message, privateKey: privateKey);
   }
 
   /// Sign personal message, it's signMessage function but it's added prefix before
@@ -66,9 +82,13 @@ class EthSigUtil {
   static String signPersonalMessage(
       {String? privateKey,
       Uint8List? privateKeyInBytes,
-      required Uint8List message}) {
-    return SignatureUtil.signPersonalMessage(
-        message: message, privateKey: privateKey);
+      required Uint8List message,
+      bool useSecp256R1 = false}) {
+    return useSecp256R1
+        ? SignatureR1Util.signPersonalMessage(
+            message: message, privateKey: privateKey)
+        : SignatureUtil.signPersonalMessage(
+            message: message, privateKey: privateKey);
   }
 
   /// Recover exactly sender address from signature and message
@@ -77,9 +97,14 @@ class EthSigUtil {
   /// @param {Uint8List} message - the message of signature
   /// @returns {String} - wallet address which signed the above message to the above signature
   static String recoverSignature(
-      {required String signature, required Uint8List message}) {
-    return SignatureUtil.ecRecover(
-        signature: signature, message: message, isPersonalSign: false);
+      {required String signature,
+      required Uint8List message,
+      bool useSecp256R1 = false}) {
+    return useSecp256R1
+        ? SignatureR1Util.ecRecover(
+            signature: signature, message: message, isPersonalSign: false)
+        : SignatureUtil.ecRecover(
+            signature: signature, message: message, isPersonalSign: false);
   }
 
   /// Recover exactly sender address from personal signature and message
@@ -88,8 +113,13 @@ class EthSigUtil {
   /// @param {Uint8List} message - the message of signature
   /// @returns {String} - wallet address which signed the above message to the above signature
   static String recoverPersonalSignature(
-      {required String signature, required Uint8List message}) {
-    return SignatureUtil.ecRecover(
-        signature: signature, message: message, isPersonalSign: true);
+      {required String signature,
+      required Uint8List message,
+      bool useSecp256R1 = false}) {
+    return useSecp256R1
+        ? SignatureR1Util.ecRecover(
+            signature: signature, message: message, isPersonalSign: true)
+        : SignatureUtil.ecRecover(
+            signature: signature, message: message, isPersonalSign: true);
   }
 }

@@ -7,6 +7,7 @@ import 'package:eth_sig_util/eth_sig_util.dart';
 import 'package:eth_sig_util/model/ecdsa_signature.dart';
 import 'package:eth_sig_util/util/abi.dart';
 import 'package:eth_sig_util/util/signature.dart';
+import 'package:eth_sig_util/util/signaturer1.dart';
 import 'package:eth_sig_util/util/utils.dart';
 
 import '../model/typed_data.dart';
@@ -65,8 +66,10 @@ class TypedDataUtil {
 
   static Uint8List? recoverPublicKey(
       dynamic data, String sig, TypedDataVersion version,
-      {int? chainId}) {
-    var sigParams = SignatureUtil.fromRpcSig(sig);
+      {int? chainId, bool useSecp256R1 = false}) {
+    var sigParams = useSecp256R1
+        ? SignatureR1Util.fromRpcSig(sig)
+        : SignatureUtil.fromRpcSig(sig);
     var messageHash;
     switch (version) {
       case TypedDataVersion.V1:
@@ -91,9 +94,13 @@ class TypedDataUtil {
         messageHash = hashTypedDataV4(data);
         break;
     }
-    return SignatureUtil.recoverPublicKeyFromSignature(
-        ECDSASignature(sigParams.r, sigParams.s, sigParams.v), messageHash,
-        chainId: chainId);
+    return useSecp256R1
+        ? SignatureR1Util.recoverPublicKeyFromSignature(
+            ECDSASignature(sigParams.r, sigParams.s, sigParams.v), messageHash,
+            chainId: chainId)
+        : SignatureUtil.recoverPublicKeyFromSignature(
+            ECDSASignature(sigParams.r, sigParams.s, sigParams.v), messageHash,
+            chainId: chainId);
   }
 
   static Uint8List hashTypedData(TypedMessage typedData, String version) {
