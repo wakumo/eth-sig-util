@@ -95,7 +95,7 @@ class SignatureR1Util {
       required isPersonalSign}) {
     final messageHash = isPersonalSign ? _getPersonalMessage(message) : message;
     final publicKey = recoverPublicKeyFromSignature(
-        SignatureUtil.fromRpcSig(signature), messageHash);
+        SignatureR1Util.fromRpcSig(signature), messageHash);
     if (publicKey == null)
       throw Exception('Can not recover public key from signature');
     return bytesToHex(publicKeyToAddress(publicKey), include0x: true);
