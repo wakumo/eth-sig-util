@@ -259,7 +259,7 @@ class SignatureR1Util {
       return false;
     }
 
-    if (homesteadOrLater && s > BigInt.from(SECP256K1_N / BigInt.two)) {
+    if (homesteadOrLater && s > SECP256K1_N_DIV_2) {
       return false;
     }
 
