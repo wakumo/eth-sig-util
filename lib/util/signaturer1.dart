@@ -240,7 +240,7 @@ class SignatureR1Util {
   static bool isValidSignature(BigInt r, BigInt s, int v,
       {bool homesteadOrLater = true, int? chainId}) {
     var SECP256K1_N_DIV_2 = decodeBigInt(hex.decode(
-        '7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0'));
+        '7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8'));
     var SECP256K1_N = decodeBigInt(hex.decode(
         'ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551'));
 
