@@ -1,0 +1,274 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:collection/collection.dart' show ListEquality;
+import 'package:convert/convert.dart';
+import 'package:eth_sig_util/model/ecdsa_signature.dart';
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/digests/sha256.dart';
+import 'package:pointycastle/ecc/api.dart';
+import 'package:pointycastle/ecc/curves/secp256r1.dart';
+import 'package:pointycastle/macs/hmac.dart';
+import 'package:pointycastle/signers/ecdsa_signer.dart';
+
+import 'bigint.dart';
+import 'bytes.dart';
+import 'keccak.dart';
+import 'utils.dart';
+
+final ECDomainParameters _params = ECCurve_secp256r1();
+final BigInt _halfCurveOrder = _params.n ~/ BigInt.two;
+
+class SignatureR1Util {
+  static const _messagePrefix = '\u0019Ethereum Signed Message:\n';
+
+  static String sign(
+      {required Uint8List message,
+      String? privateKey,
+      Uint8List? privateKeyInBytes}) {
+    if (privateKey == null && privateKeyInBytes == null)
+      throw ArgumentError('Missing private key to sign');
+    final sig =
+        signToSignature(message, privateKeyInBytes ?? hexToBytes(privateKey!));
+    return concatSig(toBuffer(sig.r), toBuffer(sig.s), toBuffer(sig.v));
+  }
+
+  static String signPersonalMessage(
+      {required Uint8List message,
+      String? privateKey,
+      Uint8List? privateKeyInBytes}) {
+    final personalMessage = _getPersonalMessage(message);
+    return sign(message: personalMessage, privateKey: privateKey);
+  }
+
+  static ECDSASignature signToSignature(
+      Uint8List message, Uint8List privateKey) {
+    final digest = SHA256Digest();
+    final signer = ECDSASigner(null, HMac(digest, 64));
+    final key = ECPrivateKey(decodeBigInt(privateKey), _params);
+
+    signer.init(true, PrivateKeyParameter(key));
+    var sig = signer.generateSignature(message) as ECSignature;
+
+    /*
+	This is necessary because if a message can be signed by (r, s), it can also
+	be signed by (r, -s (mod N)) which N being the order of the elliptic function
+	used. In order to ensure transactions can't be tampered with (even though it
+	would be harmless), Ethereum only accepts the signature with the lower value
+	of s to make the signature for the message unique.
+	More details at
+	https://github.com/web3j/web3j/blob/master/crypto/src/main/java/org/web3j/crypto/ECDSASignature.java#L27
+	 */
+    if (sig.s.compareTo(_halfCurveOrder) > 0) {
+      final canonicalisedS = _params.n - sig.s;
+      sig = ECSignature(sig.r, canonicalisedS);
+    }
+
+    // Now we have to work backwards to figure out the recId needed to recover the signature.
+    //https://github.com/web3j/web3j/blob/master/crypto/src/main/java/org/web3j/crypto/Sign.java
+    final publicKey = privateKeyToPublicKey(privateKey);
+    int recoveryId = -1;
+    for (var i = 0; i < 2; i++) {
+      final k = _recoverPublicKeyFromSignature(i, sig.r, sig.s, message);
+      if (ListEquality().equals(k, publicKey)) {
+        recoveryId = i;
+        break;
+      }
+    }
+
+    if (recoveryId == -1) {
+      throw Exception(
+          'Could not construct a recoverable key. This should never happen');
+    }
+
+    return ECDSASignature(
+      sig.r,
+      sig.s,
+      recoveryId + 27,
+    );
+  }
+
+  static String ecRecover(
+      {required String signature,
+      required Uint8List message,
+      int? chainId,
+      required isPersonalSign}) {
+    final messageHash = isPersonalSign ? _getPersonalMessage(message) : message;
+    final publicKey = recoverPublicKeyFromSignature(
+        SignatureR1Util.fromRpcSig(signature), messageHash);
+    if (publicKey == null)
+      throw Exception('Can not recover public key from signature');
+    return bytesToHex(publicKeyToAddress(publicKey), include0x: true);
+  }
+
+  static Uint8List publicKeyToAddress(Uint8List publicKey) {
+    assert(publicKey.length == 64);
+    final hashed = keccak256(publicKey);
+    assert(hashed.length == 32);
+    return hashed.sublist(12, 32);
+  }
+
+  /// Generates a public key for the given private key using the ecdsa curve which
+  /// Ethereum uses.
+  static Uint8List privateKeyToPublicKey(Uint8List privateKey) {
+    final privateKeyNum = decodeBigInt(privateKey);
+    final p = _params.G * privateKeyNum;
+
+    //skip the type flag, https://github.com/ethereumjs/ethereumjs-util/blob/master/index.js#L319
+    return Uint8List.view(p!.getEncoded(false).buffer, 1);
+  }
+
+  static Uint8List? _recoverPublicKeyFromSignature(
+      int recId, BigInt r, BigInt s, Uint8List message) {
+    final n = _params.n;
+    final i = BigInt.from(recId ~/ 2);
+    final x = r + (i * n);
+
+    //Parameter q of curve
+    final prime = BigInt.parse(
+        'fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f',
+        radix: 16);
+    if (x.compareTo(prime) >= 0) return null;
+
+    final R = _decompressKey(x, (recId & 1) == 1, _params.curve);
+    final ECPoint? ecPoint = R * n;
+    if (ecPoint == null || !ecPoint.isInfinity) return null;
+
+    final e = decodeBigInt(message);
+
+    final eInv = (BigInt.zero - e) % n;
+    final rInv = r.modInverse(n);
+    final srInv = (rInv * s) % n;
+    final eInvrInv = (rInv * eInv) % n;
+
+    final preQ = (_params.G * eInvrInv);
+    if (preQ == null) return null;
+    final q = preQ + (R * srInv);
+
+    final bytes = q?.getEncoded(false);
+    return bytes?.sublist(1);
+  }
+
+  static ECPoint _decompressKey(BigInt xBN, bool yBit, ECCurve c) {
+    List<int> x9IntegerToBytes(BigInt s, int qLength) {
+      //https://github.com/bcgit/bc-java/blob/master/core/src/main/java/org/bouncycastle/asn1/x9/X9IntegerConverter.java#L45
+      final bytes = encodeBigInt(s);
+
+      if (qLength < bytes.length) {
+        return bytes.sublist(0, bytes.length - qLength);
+      } else if (qLength > bytes.length) {
+        final tmp = List<int>.filled(qLength, 0);
+
+        final offset = qLength - bytes.length;
+        for (var i = 0; i < bytes.length; i++) {
+          tmp[i + offset] = bytes[i];
+        }
+
+        return tmp;
+      }
+
+      return bytes;
+    }
+
+    final compEnc = x9IntegerToBytes(xBN, 1 + ((c.fieldSize + 7) ~/ 8));
+    compEnc[0] = yBit ? 0x03 : 0x02;
+    return c.decodePoint(compEnc)!;
+  }
+
+  static String concatSig(Uint8List r, Uint8List s, Uint8List v) {
+    var rSig = fromSigned(r);
+    var sSig = fromSigned(s);
+    var vSig = bufferToInt(v);
+    var rStr = _padWithZeroes(hex.encode(toUnsigned(rSig)), 64);
+    var sStr = _padWithZeroes(hex.encode(toUnsigned(sSig)), 64);
+    var vStr = stripHexPrefix(intToHex(vSig));
+    return addHexPrefix(rStr + sStr + vStr);
+  }
+
+  static String _padWithZeroes(String number, int length) {
+    var myString = '' + number;
+    while (myString.length < length) {
+      myString = '0' + myString;
+    }
+    return myString;
+  }
+
+  static ECDSASignature fromRpcSig(String sig) {
+    Uint8List buf = toBuffer(sig);
+
+    // NOTE: with potential introduction of chainId this might need to be updated
+    if (buf.length != 65) {
+      throw ArgumentError('Invalid signature length');
+    }
+
+    var v = buf[64];
+    // support both versions of `eth_sign` responses
+    if (v < 27) {
+      v += 27;
+    }
+
+    return ECDSASignature(
+      decodeBigInt(Uint8List.view(buf.buffer, 0, 32)),
+      decodeBigInt(Uint8List.view(buf.buffer, 32, 32)),
+      v,
+    );
+  }
+
+  static Uint8List? recoverPublicKeyFromSignature(
+      ECDSASignature sig, Uint8List message,
+      {int? chainId}) {
+    int recoveryId = _calculateSigRecovery(sig.v, chainId: chainId);
+    if (!_isValidSigRecovery(recoveryId)) {
+      throw ArgumentError("invalid signature v value");
+    }
+
+    if (!isValidSignature(sig.r, sig.s, sig.v, chainId: chainId)) {
+      throw ArgumentError("invalid signature");
+    }
+
+    return _recoverPublicKeyFromSignature(recoveryId, sig.r, sig.s, message);
+  }
+
+  static int _calculateSigRecovery(int v, {int? chainId}) {
+    return chainId != null ? v - (2 * chainId + 35) : v - 27;
+  }
+
+  static bool _isValidSigRecovery(int recoveryId) {
+    return recoveryId == 0 || recoveryId == 1;
+  }
+
+  static bool isValidSignature(BigInt r, BigInt s, int v,
+      {bool homesteadOrLater = true, int? chainId}) {
+    var SECP256K1_N_DIV_2 = decodeBigInt(hex.decode(
+        '7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8'));
+    var SECP256K1_N = decodeBigInt(hex.decode(
+        'ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551'));
+
+    if (encodeBigInt(r).length != 32 || encodeBigInt(s).length != 32) {
+      return false;
+    }
+
+    if (!_isValidSigRecovery(_calculateSigRecovery(v, chainId: chainId))) {
+      return false;
+    }
+
+    if (r == BigInt.zero ||
+        r > SECP256K1_N ||
+        s == BigInt.zero ||
+        s > SECP256K1_N) {
+      return false;
+    }
+
+    if (homesteadOrLater && s > SECP256K1_N_DIV_2) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static Uint8List _getPersonalMessage(Uint8List message) {
+    final prefix = _messagePrefix + message.length.toString();
+    final prefixBytes = ascii.encode(prefix);
+    return keccak256(Uint8List.fromList(prefixBytes + message));
+  }
+}
