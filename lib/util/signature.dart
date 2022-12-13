@@ -38,7 +38,10 @@ class SignatureUtil {
       String? privateKey,
       Uint8List? privateKeyInBytes}) {
     final personalMessage = _getPersonalMessage(message);
-    return sign(message: personalMessage, privateKey: privateKey);
+    return sign(
+        message: personalMessage,
+        privateKey: privateKey,
+        privateKeyInBytes: privateKeyInBytes);
   }
 
   static ECDSASignature signToSignature(
