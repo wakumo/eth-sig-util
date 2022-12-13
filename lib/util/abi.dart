@@ -154,6 +154,11 @@ class AbiUtil {
       size = parseTypeNxM(type);
 
       return encodeSingle('int256', parseNumber(arg) * BigInt.two.pow(size[1]));
+    } else if (type.startsWith('tuple')) {
+      final raw = type.replaceAll('tuple', '');
+      final newTypes = raw.substring(1, raw.length - 1);
+      final subTypes = newTypes.split(',').map((e) => e.trim()).toList();
+      return rawEncode(subTypes, arg);
     }
 
     throw new ArgumentError('Unsupported or invalid type: ' + type);
