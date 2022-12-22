@@ -200,7 +200,7 @@ class AbiUtil {
       return Uint8List.fromList(utf8.encode(value));
     } else if (type == 'bool') {
       bitsize = bitsize != null ? 256 : 8;
-      var padding = List.generate((bitsize) / 4, (index) => '').join('0');
+      var padding = List.generate(((bitsize) / 4).floor(), (index) => '').join('0');
       return Uint8List.fromList(
           hex.decode(value ? padding + '1' : padding + '0'));
     } else if (type == 'address') {
