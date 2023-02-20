@@ -96,7 +96,8 @@ class TypedDataUtil {
 
   static Uint8List hashTypedData(
       TypedMessage typedData, String version, int chainId) {
-    if (typedData.domain!.chainId != chainId) {
+    if (typedData.domain?.chainId != null &&
+        typedData.domain?.chainId != chainId) {
       throw ArgumentError('chainId does not match');
     }
 
