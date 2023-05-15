@@ -198,18 +198,37 @@ class TypedDataUtil {
       }
 
       final fields = types[primaryType];
-      fields?.forEach((field) {
+
+      if (primaryType != "EIP712Domain" &&
+          fields?.length != (data as Map?)?.length) {
+        throw ArgumentError('Invalid number of fields');
+      }
+
+      for (var field in fields ?? []) {
+        if (primaryType != "EIP712Domain" &&
+            !(data?.containsKey(field.name) ?? false)) {
+          throw ArgumentError('missing field ${field.name}');
+        }
         final List<dynamic> result = encodeField(
           field.name,
           field.type,
-          data[field.name],
+          data?[field.name],
         );
         encodedTypes.add(result[0]);
         encodedValues.add(result[1]);
-      });
+      }
     } else {
+      if (primaryType != "EIP712Domain" &&
+          types[primaryType]?.length != (data as Map?)?.length) {
+        throw ArgumentError('Invalid number of fields');
+      }
+
       types[primaryType]?.forEach((TypedDataField field) {
-        var value = data[field.name];
+        if (primaryType != "EIP712Domain" &&
+            !(data?.containsKey(field.name) ?? false)) {
+          throw ArgumentError('missing field ${field.name}');
+        }
+        var value = data?[field.name];
         if (value != null) {
           if (field.type == 'bytes') {
             encodedTypes.add('bytes32');
