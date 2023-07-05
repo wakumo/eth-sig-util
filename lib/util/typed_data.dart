@@ -199,10 +199,10 @@ class TypedDataUtil {
 
       final fields = types[primaryType];
 
-      if (primaryType != "EIP712Domain" &&
-          fields?.length != (data as Map?)?.length) {
-        throw ArgumentError('Invalid number of fields');
-      }
+      // if (primaryType != "EIP712Domain" &&
+      //     fields?.length != (data as Map?)?.length) {
+      //   throw ArgumentError('Invalid number of fields');
+      // }
 
       for (var field in fields ?? []) {
         if (primaryType != "EIP712Domain" &&
