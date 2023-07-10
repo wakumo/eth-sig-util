@@ -109,7 +109,7 @@ void main() {
               'EIP712Domain', typedData.domain, typedData.types, 'V4'),
         ),
         '0xfacb2c1888f63a780c84c216bd9a81b516fc501a19bae1fc81d82df590bbdc60');
-    expect(bufferToHex(TypedDataUtil.hashTypedDataV4(typedData)),
+    expect(bufferToHex(TypedDataUtil.hashTypedDataV4(typedData, 1)),
         '0x807773b9faa9879d4971b43856c4d60c2da15c6f8c062bd9d33afefb756de19c');
   });
 
@@ -132,6 +132,7 @@ void main() {
       "domain": {
         "name": "Wrapped Ether",
         "version": "1",
+        "chainId": 1,
         "verifyingContract": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
         "salt":
             "0x0000000000000000000000000000000000000000000000000000000000000089"
@@ -145,7 +146,7 @@ void main() {
     };
 
     final typedData = TypedMessage.fromJson(rawTypedData);
-    expect(bufferToHex(TypedDataUtil.hashTypedDataV4(typedData)),
+    expect(bufferToHex(TypedDataUtil.hashTypedDataV4(typedData, 1)),
         '0xcfe2afcb6ec9cd89e498fb2a7f06a29a12d145eca8ec75f8f8ecf6e2c7cf64a6');
   });
 }

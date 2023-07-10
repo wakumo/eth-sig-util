@@ -5,8 +5,6 @@ import 'package:eth_sig_util/eth_sig_util.dart';
 import 'package:eth_sig_util/model/typed_data.dart';
 import 'package:eth_sig_util/util/bytes.dart';
 import 'package:eth_sig_util/util/keccak.dart';
-import 'package:eth_sig_util/util/signature.dart';
-import 'package:eth_sig_util/util/typed_data.dart';
 import 'package:eth_sig_util/util/utils.dart';
 import 'package:test/test.dart';
 
@@ -139,7 +137,8 @@ void main() {
     final sig = EthSigUtil.signTypedData(
         privateKey: bytesToHex(privateKey),
         jsonData: jsonData,
-        version: TypedDataVersion.V3);
+        version: TypedDataVersion.V3,
+        chainId: 1);
 
     expect(sig,
         '0x4355c47d63924e8a72e509b65029052eb6c299d53a04e167c5775fd466751c9d07299936d304c153f6443dfa05f40ff007d72911b6f72307f996231605b915621c');
@@ -192,7 +191,8 @@ void main() {
     final sig = EthSigUtil.signTypedData(
         privateKey: bytesToHex(privateKey),
         jsonData: jsonData,
-        version: TypedDataVersion.V3);
+        version: TypedDataVersion.V3,
+        chainId: 1);
 
     expect(sig,
         '0xdd17ea877a7da411c85ff94bc54180631d0e86efdcd68876aeb2e051417b68e76be6858d67b20baf7be9c6402d49930bfea2535e9ae150e85838ee265094fd081b');
@@ -255,7 +255,8 @@ void main() {
     final sig = EthSigUtil.signTypedData(
         privateKey: bytesToHex(privateKey),
         jsonData: jsonData,
-        version: TypedDataVersion.V4);
+        version: TypedDataVersion.V4,
+        chainId: 1);
 
     expect(sig,
         '0x65cbd956f2fae28a601bebc9b906cea0191744bd4c4247bcd27cd08f8eb6b71c78efdf7a31dc9abee78f492292721f362d296cf86b4538e07b51303b67f749061b');
@@ -301,7 +302,8 @@ void main() {
     final sig = EthSigUtil.signTypedData(
         privateKey: bytesToHex(privateKey),
         jsonData: jsonData,
-        version: TypedDataVersion.V4);
+        version: TypedDataVersion.V4,
+        chainId: 1);
 
     expect(sig,
         '0xf2ec61e636ff7bb3ac8bc2a4cc2c8b8f635dd1b2ec8094c963128b358e79c85c5ca6dd637ed7e80f0436fe8fce39c0e5f2082c9517fe677cc2917dcd6c84ba881c');

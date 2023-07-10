@@ -5,8 +5,6 @@ import 'package:buffer/buffer.dart';
 import 'package:convert/convert.dart';
 import 'package:eth_sig_util/eth_sig_util.dart';
 import 'package:eth_sig_util/model/ecdsa_signature.dart';
-import 'package:eth_sig_util/util/abi.dart';
-import 'package:eth_sig_util/util/signature.dart';
 import 'package:eth_sig_util/util/utils.dart';
 
 import '../model/typed_data.dart';
@@ -46,8 +44,8 @@ class TypedDataUtil {
             'jsonData format is not corresponding to TypedMessage');
       }
       return version == TypedDataVersion.V4
-          ? TypedDataUtil.hashTypedDataV4(typedData)
-          : TypedDataUtil.hashTypedDataV3(typedData);
+          ? TypedDataUtil.hashTypedDataV4(typedData, chainId!)
+          : TypedDataUtil.hashTypedDataV3(typedData, chainId!);
     }
   }
 
@@ -55,12 +53,12 @@ class TypedDataUtil {
     return typedSignatureHash(typedData);
   }
 
-  static Uint8List hashTypedDataV3(TypedMessage typedData) {
-    return hashTypedData(typedData, 'V3');
+  static Uint8List hashTypedDataV3(TypedMessage typedData, int chainId) {
+    return hashTypedData(typedData, 'V3', chainId);
   }
 
-  static Uint8List hashTypedDataV4(TypedMessage typedData) {
-    return hashTypedData(typedData, 'V4');
+  static Uint8List hashTypedDataV4(TypedMessage typedData, int chainId) {
+    return hashTypedData(typedData, 'V4', chainId);
   }
 
   static Uint8List? recoverPublicKey(
@@ -81,14 +79,14 @@ class TypedDataUtil {
           throw ArgumentError(
               'Recover public key version 3 required TypedMessage object');
         }
-        messageHash = hashTypedDataV3(data);
+        messageHash = hashTypedDataV3(data, chainId!);
         break;
       case TypedDataVersion.V4:
         if (!(data is TypedMessage)) {
           throw ArgumentError(
               'Recover public key version 4 required TypedMessage object');
         }
-        messageHash = hashTypedDataV4(data);
+        messageHash = hashTypedDataV4(data, chainId!);
         break;
     }
     return SignatureUtil.recoverPublicKeyFromSignature(
@@ -96,7 +94,13 @@ class TypedDataUtil {
         chainId: chainId);
   }
 
-  static Uint8List hashTypedData(TypedMessage typedData, String version) {
+  static Uint8List hashTypedData(
+      TypedMessage typedData, String version, int chainId) {
+    if (typedData.domain?.chainId != null &&
+        typedData.domain?.chainId != chainId) {
+      throw ArgumentError('chainId does not match');
+    }
+
     var parts = BytesBuffer();
     parts.add(hex.decode('1901'));
     parts.add(
@@ -194,18 +198,37 @@ class TypedDataUtil {
       }
 
       final fields = types[primaryType];
-      fields?.forEach((field) {
+
+      // if (primaryType != "EIP712Domain" &&
+      //     fields?.length != (data as Map?)?.length) {
+      //   throw ArgumentError('Invalid number of fields');
+      // }
+
+      for (var field in fields ?? []) {
+        if (primaryType != "EIP712Domain" &&
+            !(data?.containsKey(field.name) ?? false)) {
+          throw ArgumentError('missing field ${field.name}');
+        }
         final List<dynamic> result = encodeField(
           field.name,
           field.type,
-          data[field.name],
+          data?[field.name],
         );
         encodedTypes.add(result[0]);
         encodedValues.add(result[1]);
-      });
+      }
     } else {
+      // if (primaryType != "EIP712Domain" &&
+      //     types[primaryType]?.length != (data as Map?)?.length) {
+      //   throw ArgumentError('Invalid number of fields');
+      // }
+
       types[primaryType]?.forEach((TypedDataField field) {
-        var value = data[field.name];
+        if (primaryType != "EIP712Domain" &&
+            !(data?.containsKey(field.name) ?? false)) {
+          throw ArgumentError('missing field ${field.name}');
+        }
+        var value = data?[field.name];
         if (value != null) {
           if (field.type == 'bytes') {
             encodedTypes.add('bytes32');

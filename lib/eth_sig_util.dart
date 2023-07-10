@@ -22,10 +22,11 @@ class EthSigUtil {
       {String? privateKey,
       Uint8List? privateKeyInBytes,
       required String jsonData,
-      required TypedDataVersion version}) {
+      required TypedDataVersion version,
+      int? chainId}) {
     return SignatureUtil.sign(
-        message:
-            TypedDataUtil.hashMessage(jsonData: jsonData, version: version),
+        message: TypedDataUtil.hashMessage(
+            jsonData: jsonData, version: version, chainId: chainId),
         privateKey: privateKey,
         privateKeyInBytes: privateKeyInBytes);
   }
