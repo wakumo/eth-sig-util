@@ -218,10 +218,10 @@ class TypedDataUtil {
         encodedValues.add(result[1]);
       }
     } else {
-      if (primaryType != "EIP712Domain" &&
-          types[primaryType]?.length != (data as Map?)?.length) {
-        throw ArgumentError('Invalid number of fields');
-      }
+      // if (primaryType != "EIP712Domain" &&
+      //     types[primaryType]?.length != (data as Map?)?.length) {
+      //   throw ArgumentError('Invalid number of fields');
+      // }
 
       types[primaryType]?.forEach((TypedDataField field) {
         if (primaryType != "EIP712Domain" &&
